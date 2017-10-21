@@ -2,11 +2,14 @@ package com.alibaba.weex.extend.module;
 
 import android.content.Context;
 
+import com.alibaba.weex.extend.model.BaseResultModel;
+import com.alibaba.weex.extend.model.WeChatPayModel;
 import com.taobao.weex.WXEnvironment;
 import com.taobao.weex.annotation.JSMethod;
 import com.taobao.weex.bridge.JSCallback;
 import com.taobao.weex.common.WXModule;
 import com.tencent.mm.opensdk.modelmsg.SendAuth;
+import com.tencent.mm.opensdk.modelpay.PayReq;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
@@ -44,8 +47,22 @@ public class WeChatModule extends WXModule {
     }
 
 
+    @JSMethod
+    public void registerApp(String appid, JSCallback callback) {
+        mCallback = callback;
+
+        mContext = WXEnvironment.getApplication().getApplicationContext();
+
+        appId = appid;
+
+        wxapi = WXAPIFactory.createWXAPI(mContext, appid, true);
+
+        mCallback.invoke(wxapi.registerApp(appid));
+    }
+
+
     @JSMethod(uiThread = true)
-    public void login(String url, JSCallback callback) {
+    public void login(String params, JSCallback callback) {
         mCallback = callback;
 
         SendAuth.Req req = new SendAuth.Req();
@@ -61,25 +78,42 @@ public class WeChatModule extends WXModule {
         wxapi.sendReq(req);
     }
 
-
-    @JSMethod
-    public void registerApp(String appid, JSCallback callback) {
+    @JSMethod(uiThread = true)
+    public void pay(String params, JSCallback callback) {
         mCallback = callback;
+        ParseModule parseModule = new ParseModule();
+        WeChatPayModel weChatPayModal = parseModule.parseObject(params, WeChatPayModel.class);
 
-        mContext = WXEnvironment.getApplication().getApplicationContext();
+        if (!wxapi.isWXAppInstalled()) {
+            BaseResultModel result = new BaseResultModel();
+            result.resCode = 9;
+            result.msg = "请先安装微信客户端";
+            if (mCallback != null) {
+                mCallback.invokeAndKeepAlive(result);
+            }
+            return;
+        }
 
-        appId = appid;
+        PayReq request = new PayReq();
+        request.appId = weChatPayModal.getAppid();
+        request.partnerId = weChatPayModal.getPartnerid();
+        request.nonceStr = weChatPayModal.getNoncestr();
+        request.packageValue = weChatPayModal.getPackageValue();
+        request.prepayId = weChatPayModal.getPrepayid();
+        request.timeStamp = weChatPayModal.getTimestamp();
+        request.sign = weChatPayModal.getSign();
+        wxapi.registerApp(appId);
+        wxapi.sendReq(request);
 
-        wxapi = WXAPIFactory.createWXAPI(mContext, appid, true);
-
-        mCallback.invoke(wxapi.registerApp(appid));
     }
 
 
-    public void reciverResult(String result) {
+    public void reciverResult(BaseResultModel result) {
         if (mCallback != null) {
             mCallback.invoke(result);
         }
     }
+
+
 
 }

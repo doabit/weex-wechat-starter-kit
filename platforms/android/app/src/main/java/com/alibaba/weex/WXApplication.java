@@ -29,7 +29,7 @@ public class WXApplication extends Application {
 
     try {
       WXSDKEngine.registerModule("event", WXEventModule.class);
-      WXSDKEngine.registerModule("dxevent", WeChatModule.class);
+      WXSDKEngine.registerModule("wechat", WeChatModule.class);
     } catch (WXException e) {
       e.printStackTrace();
     }

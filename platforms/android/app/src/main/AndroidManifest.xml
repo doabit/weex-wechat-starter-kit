@@ -80,19 +80,7 @@
                             <!--<action android:name="com.tencent.mm.plugin.openapi.Intent.ACTION_REFRESH_WXAPP" />-->
                         <!--</intent-filter>-->
                     <!--</receiver>-->
-                 <!--<activity-->
-                        <!--android:name=".wxapi.WXEntryActivity"-->
-                        <!--android:exported="true"-->
-                        <!--android:launchMode="singleTop"-->
-                        <!--android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen">-->
-                        <!--<intent-filter>-->
-                            <!--<action android:name="android.intent.action.VIEW"/>-->
 
-                            <!--<category android:name="android.intent.category.DEFAULT"/>-->
-
-                            <!--<data android:scheme="wxa96ad00ad9b64cd9"/>-->
-                        <!--</intent-filter>-->
-                    <!--</activity>-->
         <activity
             android:name=".wxapi.WXEntryActivity"
             android:label="@string/app_name"
@@ -100,7 +88,13 @@
             android:launchMode="singleTop"
         android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen"
             />
-                    
+
+        <activity
+        android:name=".wxapi.WXPayEntryActivity"
+        android:exported="true"
+        android:launchMode="singleTop"/>
+
+
     </application>
 
 </manifest>

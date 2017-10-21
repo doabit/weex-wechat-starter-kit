@@ -3,6 +3,7 @@ package com.alibaba.weex.wxapi;
 import android.app.Activity;
 import android.os.Bundle;
 
+import com.alibaba.weex.extend.model.WeChatAuthResultModel;
 import com.alibaba.weex.extend.module.WeChatModule;
 import com.taobao.weex.utils.WXLogUtils;
 import com.tencent.mm.opensdk.modelbase.BaseReq;
@@ -45,9 +46,19 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
 
             //获取微信传回的code
             String code = newResp.code;
+            WeChatAuthResultModel result = new WeChatAuthResultModel();
+            result.resCode = newResp.errCode;
+            result.msg = newResp.errStr;
+            result.code = newResp.code;
+
             WXLogUtils.e(TAG, code);
 
-            WeChatModule.getInstance().reciverResult(code);
+            WeChatModule.getInstance().reciverResult(result);
+
+//            Map<String,Object> params=new HashMap<>();
+//            params.put("key", code);
+
+//            WeChatModule.getInstance().mWXSDKInstance.fireGlobalEventCallback("wx_login",params);
 
 
             finish();
