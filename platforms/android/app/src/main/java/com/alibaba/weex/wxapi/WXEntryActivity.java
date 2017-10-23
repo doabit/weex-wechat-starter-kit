@@ -1,14 +1,17 @@
 package com.alibaba.weex.wxapi;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 
 import com.alibaba.weex.extend.model.WeChatAuthResultModel;
+import com.alibaba.weex.extend.model.WeChatShareResultModel;
 import com.alibaba.weex.extend.module.WeChatModule;
 import com.taobao.weex.utils.WXLogUtils;
 import com.tencent.mm.opensdk.modelbase.BaseReq;
 import com.tencent.mm.opensdk.modelbase.BaseResp;
 import com.tencent.mm.opensdk.modelmsg.SendAuth;
+import com.tencent.mm.opensdk.modelmsg.SendMessageToWX;
 import com.tencent.mm.opensdk.openapi.IWXAPIEventHandler;
 
 //import android.content.Intent;
@@ -26,7 +29,14 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
         WeChatModule.wxapi.handleIntent(getIntent(), this);
     }
 
-
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (WeChatModule.wxapi!= null) {
+            WeChatModule.wxapi.handleIntent(intent, this);
+        }
+    }
 
     @Override
     public void onReq(BaseReq baseReq) {
@@ -57,10 +67,18 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
 
 //            Map<String,Object> params=new HashMap<>();
 //            params.put("key", code);
-
 //            WeChatModule.getInstance().mWXSDKInstance.fireGlobalEventCallback("wx_login",params);
 
 
+            finish();
+        } else if (resp instanceof SendMessageToWX.Resp) {
+            SendMessageToWX.Resp newResp = (SendMessageToWX.Resp) (resp);
+            WeChatShareResultModel result = new WeChatShareResultModel();
+            result.resCode = newResp.errCode;
+            result.msg = newResp.errStr;
+            result.openid = newResp.openId;
+
+            WeChatModule.getInstance().reciverResult(result);
             finish();
         }
         finish();

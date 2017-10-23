@@ -2,10 +2,11 @@ package com.alibaba.weex.wxapi;
 
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.alibaba.weex.extend.model.WeChatPayResultModel;
+import com.alibaba.weex.extend.model.BaseResultModel;
 import com.alibaba.weex.extend.module.WeChatModule;
 import com.tencent.mm.opensdk.constants.ConstantsAPI;
 import com.tencent.mm.opensdk.modelbase.BaseReq;
@@ -26,14 +27,14 @@ public class WXPayEntryActivity extends Activity implements IWXAPIEventHandler {
         WeChatModule.wxapi.handleIntent(getIntent(), this);
     }
 
-//    @Override
-//    protected void onNewIntent(Intent intent) {
-//        super.onNewIntent(intent);
-//        setIntent(intent);
-//        if (api != null) {
-//            api.handleIntent(intent, this);
-//        }
-//    }
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (api != null) {
+            api.handleIntent(intent, this);
+        }
+    }
 
     @Override
     public void onReq(BaseReq req) {
@@ -46,11 +47,9 @@ public class WXPayEntryActivity extends Activity implements IWXAPIEventHandler {
      */
     @Override
     public void onResp(BaseResp resp) {
-//        Log.d("pay response");
         Log.i("PAY_ACTIVE", "schea");
-//        Log.i(TAG, "error_code:---->");
         if (resp.getType() == ConstantsAPI.COMMAND_PAY_BY_WX) {
-            WeChatPayResultModel result = new WeChatPayResultModel();
+            BaseResultModel result = new BaseResultModel();
             result.msg = resp.errStr;
             result.resCode = resp.errCode;
             WeChatModule.getInstance().reciverResult(result);

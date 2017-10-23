@@ -5,7 +5,8 @@
     <name>Hello</name>
     <preference name="loglevel" value="DEBUG" />
     <preference name="launch_locally" value="false" />
-    <preference name="launch_url" value="http://192.168.1.125:8080/dist/index.js"/>
+    <preference name="launch_url" value="http://192.168.1.113:8080/dist/index.js"/>
+    <preference name="debug_host" value="10.201.4.184"/>
     <preference name="local_url" value="file://assets/index.js" />
 
 </widget>

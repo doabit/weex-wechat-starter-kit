@@ -3,6 +3,10 @@
     <image :src="logoUrl" class="logo"></image>
     <text class="title login" @click="login">WeChat Login</text>
     <text class="title pay"  @click="pay">WeChat Pay</text>
+    <text class="title pay"  @click="shareText">Text Share</text>
+    <text class="title pay"  @click="shareImage">Image Share</text>
+    <text class="title pay"  @click="shareVideo">Video Share</text>
+    <text class="title pay"  @click="shareWebPage">WebPage Share</text>
   </div>
 </template>
 
@@ -15,36 +19,74 @@
 
 <script>
   var wechat = weex.requireModule('wechat');
-  var stream = weex.requireModule('stream')
-var globalEvent = weex.requireModule('globalEvent');
+  var stream = weex.requireModule('stream');
+  var imageUrl = 'http://img1.vued.vanthink.cn/vued08aa73a9ab65dcbd360ec54659ada97c.png';
+  // var globalEvent = weex.requireModule('globalEvent');
 
-        globalEvent.addEventListener("wx_login", function (e) {
-          console.log("get geolocation", e)
-        });
-
+  // globalEvent.addEventListener("wx_login", function (e) {
+  //   console.log("get geolocation", e)
+  // });
+  //
 
   export default {
     data: {
       logoUrl: 'http://img1.vued.vanthink.cn/vued08aa73a9ab65dcbd360ec54659ada97c.png',
-      target: 'World'
     },
     created() {
-      console.log("start")
       wechat.registerApp("wxa96ad00ad9b64cd9", function(data) {
         console.log(data, "wx register")
       })
     },
     methods: {
+      shareText: function(e) {
+        wechat.shareToTimeLine({
+          type: "text",
+          content: "文字分享"
+        }, function(data) {
+          console.log("text shared", data)
+        })
+      },
+
+      shareImage: function(e) {
+        wechat.shareToTimeLine({
+          type: "image",
+          image: imageUrl
+        }, function(data) {
+          console.log("image shared", data)
+        })
+      },
+
+      shareVideo: function(e) {
+        wechat.shareToTimeLine({
+          type: "video",
+          title: '视频分享标题',
+          content: "视频分享内容",
+          image: imageUrl,
+          url: 'https://v.qq.com/x/cover/m4cz4v1n0av4a8k/x00223sb1nm.html?new=1'
+        }, function(data) {
+          console.log("video shared", data)
+        })
+      },
+
+      shareWebPage: function(e) {
+        wechat.shareToTimeLine({
+          type: "webpage",
+          title: '网页分享标题',
+          content: "网页分享内容",
+          image: imageUrl,
+          url: 'http://github.com/doabit'
+        }, function(data) {
+          console.log("web page shared", data)
+        })
+      },
       pay: function (e) {
         stream.fetch({
                method: 'POST',
                url: 'http://xiao.tunnel.doabit.com/wx_app_pay',
                type: "json"
            }, function(resData){
-               var data = resData.data;
-               // resData 数据
-               console.log(data)
-               // 示例
+              if (resData.ok) {
+                var data = resData.data;
                wechat.pay({
                    // 微信支付所需必要参数，参考官方文档
                    appid: data.appid,
@@ -57,17 +99,16 @@ var globalEvent = weex.requireModule('globalEvent');
                }, function(resData){
                    // 支付结果
                    console.log(resData)
-                   // console.log('success')
                })
+             } else {
+               console.log(resData.statusText)
+             }
            })
       },
       login: function (e) {
-        wechat.login({"xiao": 'pay'}, function(data) {
+        wechat.login({}, function(data) {
           console.log(data)
         })
-        // dxevent.auth({"xiao": "deng"}, function(data) {
-        //   console.log(data)
-        // })
       }
     }
   }

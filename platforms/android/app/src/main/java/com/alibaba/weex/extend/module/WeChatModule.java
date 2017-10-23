@@ -1,17 +1,32 @@
 package com.alibaba.weex.extend.module;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.text.TextUtils;
+import android.widget.Toast;
 
+import com.alibaba.weex.R;
 import com.alibaba.weex.extend.model.BaseResultModel;
 import com.alibaba.weex.extend.model.WeChatPayModel;
+import com.alibaba.weex.extend.model.WeChatShareModel;
 import com.taobao.weex.WXEnvironment;
 import com.taobao.weex.annotation.JSMethod;
 import com.taobao.weex.bridge.JSCallback;
 import com.taobao.weex.common.WXModule;
 import com.tencent.mm.opensdk.modelmsg.SendAuth;
+import com.tencent.mm.opensdk.modelmsg.SendMessageToWX;
+import com.tencent.mm.opensdk.modelmsg.WXImageObject;
+import com.tencent.mm.opensdk.modelmsg.WXMediaMessage;
+import com.tencent.mm.opensdk.modelmsg.WXTextObject;
+import com.tencent.mm.opensdk.modelmsg.WXVideoObject;
+import com.tencent.mm.opensdk.modelmsg.WXWebpageObject;
 import com.tencent.mm.opensdk.modelpay.PayReq;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
+
+import java.util.UUID;
+
 
 /**
  * Created by doabit on 2017/10/17.
@@ -19,16 +34,16 @@ import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
 public class WeChatModule extends WXModule {
     private static final String WEEX_CATEGORY = "com.taobao.android.intent.category.WEEX";
-    private Context mContext;
-    private String appId;
+    private final static int THUMB_SIZE = 120;
 
+    private Context mContext;
     private JSCallback mCallback;
+
+    private static String appId = null;
+    public static IWXAPI wxapi = null;
     private static volatile WeChatModule instance = null;
 
-    public static IWXAPI wxapi = null;
-
-
-    public WeChatModule(){
+    public WeChatModule() {
         super();
         mContext = WXEnvironment.getApplication().getApplicationContext();
         instance = this;
@@ -44,6 +59,10 @@ public class WeChatModule extends WXModule {
         }
 
         return instance;
+    }
+
+    public String getAppId() {
+        return appId;
     }
 
 
@@ -73,8 +92,6 @@ public class WeChatModule extends WXModule {
         //自定义信息
         req.state = "wechat_sdk_auth";
 
-        wxapi.registerApp(appId);
-
         wxapi.sendReq(req);
     }
 
@@ -102,9 +119,21 @@ public class WeChatModule extends WXModule {
         request.prepayId = weChatPayModal.getPrepayid();
         request.timeStamp = weChatPayModal.getTimestamp();
         request.sign = weChatPayModal.getSign();
-        wxapi.registerApp(appId);
+//        wxapi.registerApp(appId);
         wxapi.sendReq(request);
 
+    }
+
+    @JSMethod(uiThread = false)
+    public void shareToTimeLine(String params, JSCallback callback) {
+        mCallback = callback;
+        share(params, SendMessageToWX.Req.WXSceneTimeline);
+    }
+
+    @JSMethod(uiThread = false)
+    public void shareToSession(String params, JSCallback callback) {
+        mCallback = callback;
+        share(params, SendMessageToWX.Req.WXSceneSession);
     }
 
 
@@ -114,6 +143,166 @@ public class WeChatModule extends WXModule {
         }
     }
 
+    private boolean share(String params, int shareType) {
+        ParseModule parseModule = new ParseModule();
+        WeChatShareModel weChatShareModal = parseModule.parseObject(params, WeChatShareModel.class);
+
+        WXMediaMessage msg = getMessage(weChatShareModal);
+
+        //构造一个Req
+        SendMessageToWX.Req req = new SendMessageToWX.Req();
+        req.transaction = UUID.randomUUID().toString();
+        req.message = msg;
+        req.scene = shareType;
+
+        return wxapi.sendReq(req);
+    }
+
+
+    private WXMediaMessage getMessage(WeChatShareModel weChatShareModel) {
+        WXMediaMessage msg = null;
+        switch (weChatShareModel.getType()) {
+            case "text":
+                msg = wxTextObject(weChatShareModel);
+                break;
+            case "image":
+                msg = wxImageObject(weChatShareModel);
+                break;
+            case "video":
+                msg = wxVideoObject(weChatShareModel);
+                break;
+            case "webpage":
+                msg = wxWebpageObject(weChatShareModel);
+                break;
+            default:
+                break;
+        }
+
+        return msg;
+    }
+
+    /*
+     * 分享文字
+    */
+    private WXMediaMessage wxTextObject(WeChatShareModel weChatShareModel) {
+        String text = weChatShareModel.getContent();
+        //初始化一个WXTextObject对象
+        WXTextObject textObj = new WXTextObject();
+        textObj.text = text;
+        //用WXTextObject对象初始化一个WXMediaMessage对象
+        WXMediaMessage msg = new WXMediaMessage();
+        msg.mediaObject = textObj;
+        msg.description = text;
+        return msg;
+    }
+
+    /*
+     * 分享图片
+     */
+    private WXMediaMessage wxImageObject(WeChatShareModel weChatShareModel) {
+        Bitmap bitmap, thumb;
+
+        if (!TextUtils.isEmpty(weChatShareModel.getImage())) {
+            byte[] bytes = Util.getHtmlByteArray(weChatShareModel.getImage());
+            bitmap = Util.Bytes2Bimap(bytes);
+        } else {
+            bitmap = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.wechat);
+        }
+
+        thumb = Bitmap.createScaledBitmap(bitmap, THUMB_SIZE, THUMB_SIZE, true);
+
+        WXImageObject wxImageObject = new WXImageObject(bitmap);
+
+        WXMediaMessage msg = new WXMediaMessage(wxImageObject);
+
+        if (thumb == null) {
+            Toast.makeText(mContext, "图片为空", Toast.LENGTH_SHORT).show();
+        } else {
+            msg.thumbData = Util.bmpToByteArray(thumb, true);
+            thumb.recycle();
+        }
+
+        if (bitmap != null) {
+            bitmap.recycle();
+        }
+
+        return msg;
+    }
+
+    /*
+     * 分享链接
+    */
+    private WXMediaMessage wxWebpageObject(WeChatShareModel weChatShareModel) {
+        Bitmap bitmap, thumb;
+
+        if (!TextUtils.isEmpty(weChatShareModel.getImage())) {
+            byte[] bytes = Util.getHtmlByteArray(weChatShareModel.getImage());
+            bitmap = Util.Bytes2Bimap(bytes);
+        } else {
+            bitmap = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.wechat);
+        }
+
+        thumb = Bitmap.createScaledBitmap(bitmap, THUMB_SIZE, THUMB_SIZE, true);
+
+        WXWebpageObject webPageObject = new WXWebpageObject();
+        webPageObject.webpageUrl = weChatShareModel.getUrl();
+
+        WXMediaMessage msg = new WXMediaMessage(webPageObject);
+
+        msg.title = weChatShareModel.getTitle();
+        msg.description = weChatShareModel.getContent();
+
+
+        if (thumb == null) {
+            Toast.makeText(mContext, "图片为空", Toast.LENGTH_SHORT).show();
+        } else {
+            msg.thumbData = Util.bmpToByteArray(thumb, true);
+
+            thumb.recycle();
+        }
+
+        if (bitmap != null) {
+            bitmap.recycle();
+        }
+
+        return msg;
+    }
+
+    /*
+    * 分享视频
+    */
+    private WXMediaMessage wxVideoObject(WeChatShareModel weChatShareModel) {
+        Bitmap bitmap, thumb;
+
+        if (!TextUtils.isEmpty(weChatShareModel.getImage())) {
+            byte[] bytes = Util.getHtmlByteArray(weChatShareModel.getImage());
+            bitmap = Util.Bytes2Bimap(bytes);
+        } else {
+            bitmap = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.wechat);
+        }
+
+        thumb = Bitmap.createScaledBitmap(bitmap, THUMB_SIZE, THUMB_SIZE, true);
+
+        WXVideoObject video = new WXVideoObject();
+        video.videoUrl = weChatShareModel.getUrl();
+
+        WXMediaMessage msg = new WXMediaMessage(video);
+        msg.title = weChatShareModel.getTitle();
+        msg.description = weChatShareModel.getContent();
+
+        if (thumb == null) {
+            Toast.makeText(mContext, "图片为空", Toast.LENGTH_SHORT).show();
+        } else {
+            msg.thumbData = Util.bmpToByteArray(thumb, true);
+
+            thumb.recycle();
+        }
+
+        if (bitmap != null) {
+            bitmap.recycle();
+        }
+        return msg;
+    }
 
 
 }

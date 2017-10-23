@@ -4,8 +4,8 @@ import android.app.Application;
 
 import com.alibaba.weex.commons.adapter.ImageAdapter;
 import com.alibaba.weex.commons.util.AppConfig;
-import com.alibaba.weex.extend.module.WeChatModule;
 import com.alibaba.weex.extend.module.WXEventModule;
+import com.alibaba.weex.extend.module.WeChatModule;
 import com.alibaba.weex.pluginmanager.PluginManager;
 import com.facebook.drawee.backends.pipeline.Fresco;
 import com.taobao.weex.InitConfig;
@@ -18,7 +18,7 @@ public class WXApplication extends Application {
   @Override
   public void onCreate() {
     super.onCreate();
-    initDebugEnvironment(true, false, "192.168.1.125");
+    initDebugEnvironment(true, false, "192.168.1.113");
     WXSDKEngine.addCustomOptions("appName", "WXSample");
     WXSDKEngine.addCustomOptions("appGroup", "WXApp");
     WXSDKEngine.initialize(this,
